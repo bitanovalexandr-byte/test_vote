@@ -16,19 +16,20 @@ export async function POST(req: NextRequest) {
     const { choice } = await req.json();
     const fingerprint = generateFingerprint(req);
     
-    // Rate limiting — 1 голос в 24 часа
-    const { success } = await rateLimit(fingerprint);
-    
-    if (!success) {
-      return NextResponse.json(
-        { error: 'You can only vote once per 24 hours' },
-        { status: 429 }
-      );
+    // Rate limiting
+const { success, reset, message } = await rateLimit(fingerprint);
+
+if (!success) {
+  return NextResponse.json(
+    { error: message || 'You can only vote once per day' },
+    { 
+      status: 429,
+      headers: {
+        'X-RateLimit-Reset': new Date(reset).toISOString(),
+      }
     }
-    
-    if (choice !== 'yes' && choice !== 'no') {
-      return NextResponse.json({ error: 'Invalid choice' }, { status: 400 });
-    }
+  );
+}
 
     // Проверяем, голосовал ли уже этот пользователь (старая логика)
     const existingVoter = await db

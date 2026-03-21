@@ -39,12 +39,21 @@ export default function Home() {
       
       const data = await res.json();
       
+      // Обработка rate limiting (429)
+      if (res.status === 429) {
+        setError(data.error || '⏰ You can only vote once per day. Come back tomorrow!');
+        setLoading(false);
+        return;
+      }
+      
+      // Обработка других ошибок
       if (!res.ok) {
         setError(data.error || 'Failed to vote');
         setLoading(false);
         return;
       }
       
+      // Успешное голосование
       setStats(data);
       setUserVote(choice);
       localStorage.setItem('userChoice', choice);
@@ -89,7 +98,7 @@ export default function Home() {
           <p className="text-2xl md:text-3xl font-bold text-gray-200 mb-2">
             Is this project awesome?
           </p>
-          <p className="text-gray-500 text-sm tracking-wider">⚡ YOUR VOTE MATTERS ⚡</p>
+          <p className="text-gray-500 text-sm tracking-wider">⚡ ONE VOTE PER DAY ⚡</p>
         </div>
 
         {/* Кнопки с неоновым эффектом */}
@@ -131,8 +140,9 @@ export default function Home() {
           </button>
         </div>
 
+        {/* Ошибки (включая rate limiting) */}
         {error && (
-          <div className="text-center text-red-400 mb-6 text-sm border border-red-500/30 rounded-lg p-2 bg-red-500/10">
+          <div className="text-center text-yellow-400 mb-6 text-sm border border-yellow-500/30 rounded-lg p-3 bg-yellow-500/10">
             ⚠️ {error}
           </div>
         )}
@@ -157,7 +167,7 @@ export default function Home() {
               </span>
             </div>
             
-            {/* Неоновая круговая диаграмма */}
+            {/* Круговая диаграмма */}
             <div className="relative w-48 h-48 mx-auto mb-8">
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                 <circle
@@ -205,7 +215,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Неоновые карточки процентов */}
+            {/* Проценты */}
             <div className="grid grid-cols-2 gap-4 text-center">
               <div className="bg-gradient-to-br from-green-500/10 to-transparent border border-green-500/30 rounded-xl p-4 hover:border-green-500/60 transition-all duration-300">
                 <div className="text-3xl font-bold text-green-400 font-mono">
