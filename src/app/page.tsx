@@ -61,110 +61,111 @@ export default function Home() {
   const yesPercent = stats.total > 0 ? (stats.yes / stats.total) * 100 : 0;
   const noPercent = stats.total > 0 ? (stats.no / stats.total) * 100 : 0;
 
-  // Для круговой диаграммы
-  const yesDegrees = (yesPercent / 100) * 360;
-  const noDegrees = (noPercent / 100) * 360;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-800 to-blue-900 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Декоративные элементы */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-purple-400 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-400 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      </div>
+    <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Анимированная сетка */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,0,0.03)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
       
-      <div className="relative max-w-2xl w-full bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-8 md:p-12 border border-white/20 transform transition-all duration-500 hover:scale-[1.02]">
+      {/* Анимированные неоновые линии */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent animate-pulse"></div>
+      <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-pulse delay-700"></div>
+      
+      {/* Декоративные круги */}
+      <div className="absolute top-20 left-10 w-64 h-64 bg-green-500 rounded-full blur-[100px] opacity-20 animate-pulse"></div>
+      <div className="absolute bottom-20 right-10 w-80 h-80 bg-blue-500 rounded-full blur-[100px] opacity-20 animate-pulse delay-1000"></div>
+      
+      <div className="relative max-w-2xl w-full bg-black/80 backdrop-blur-sm rounded-2xl border border-green-500/30 shadow-2xl shadow-green-500/10 p-8 md:p-12 transition-all duration-500 hover:shadow-green-500/20">
         
-        {/* Заголовок с анимацией */}
-        <div className="text-center mb-8 animate-fade-in-down">
-          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-2">
+        {/* Заголовок с неоном */}
+        <div className="text-center mb-8">
+          <h1 className="text-5xl md:text-6xl font-bold text-transparent bg-gradient-to-r from-green-400 via-cyan-400 to-blue-400 bg-clip-text animate-pulse">
             VoteMaster
           </h1>
-          <div className="h-1 w-24 bg-gradient-to-r from-yellow-400 to-pink-500 mx-auto rounded-full"></div>
+          <div className="h-0.5 w-24 bg-gradient-to-r from-green-500 to-blue-500 mx-auto rounded-full mt-3"></div>
         </div>
 
         {/* Вопрос */}
-        <div className="text-center mb-10 animate-fade-in-up">
-          <p className="text-2xl md:text-3xl font-semibold text-white mb-2">
+        <div className="text-center mb-10">
+          <p className="text-2xl md:text-3xl font-bold text-gray-200 mb-2">
             Is this project awesome?
           </p>
-          <p className="text-gray-300">Your voice matters!</p>
+          <p className="text-gray-500 text-sm tracking-wider">⚡ YOUR VOTE MATTERS ⚡</p>
         </div>
 
-        {/* Кнопки с анимациями */}
+        {/* Кнопки с неоновым эффектом */}
         <div className="flex gap-6 justify-center mb-12">
           <button
             onClick={() => handleVote('yes')}
             disabled={!!userVote || loading}
-            className={`group relative px-10 py-4 text-xl font-bold rounded-full transition-all duration-300 transform hover:scale-110 active:scale-95 ${
+            className={`group relative px-10 py-4 text-xl font-bold rounded-lg transition-all duration-300 transform hover:scale-105 ${
               userVote === 'yes'
-                ? 'bg-gradient-to-r from-green-500 to-emerald-600 cursor-default'
-                : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-2xl hover:shadow-green-500/50'
-            } disabled:opacity-50 disabled:transform-none text-white overflow-hidden`}
+                ? 'bg-green-500 cursor-default shadow-lg shadow-green-500/50'
+                : 'bg-transparent border-2 border-green-500 text-green-400 hover:bg-green-500 hover:text-black hover:shadow-lg hover:shadow-green-500/50'
+            } disabled:opacity-50 disabled:transform-none overflow-hidden`}
           >
             <span className="relative z-10 flex items-center gap-2">
-              👍 Yes
-              {loading && <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+              👍 YES
+              {loading && <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>}
             </span>
             {!userVote && !loading && (
-              <div className="absolute inset-0 bg-white/20 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
+              <div className="absolute inset-0 bg-green-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
             )}
           </button>
           
           <button
             onClick={() => handleVote('no')}
             disabled={!!userVote || loading}
-            className={`group relative px-10 py-4 text-xl font-bold rounded-full transition-all duration-300 transform hover:scale-110 active:scale-95 ${
+            className={`group relative px-10 py-4 text-xl font-bold rounded-lg transition-all duration-300 transform hover:scale-105 ${
               userVote === 'no'
-                ? 'bg-gradient-to-r from-red-500 to-rose-600 cursor-default'
-                : 'bg-gradient-to-r from-red-500 to-rose-600 hover:shadow-2xl hover:shadow-red-500/50'
-            } disabled:opacity-50 disabled:transform-none text-white overflow-hidden`}
+                ? 'bg-red-500 cursor-default shadow-lg shadow-red-500/50'
+                : 'bg-transparent border-2 border-red-500 text-red-400 hover:bg-red-500 hover:text-black hover:shadow-lg hover:shadow-red-500/50'
+            } disabled:opacity-50 disabled:transform-none overflow-hidden`}
           >
             <span className="relative z-10 flex items-center gap-2">
-              👎 No
-              {loading && <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+              👎 NO
+              {loading && <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>}
             </span>
             {!userVote && !loading && (
-              <div className="absolute inset-0 bg-white/20 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
+              <div className="absolute inset-0 bg-red-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
             )}
           </button>
         </div>
 
         {error && (
-          <div className="text-center text-red-300 mb-6 text-sm animate-shake">
+          <div className="text-center text-red-400 mb-6 text-sm border border-red-500/30 rounded-lg p-2 bg-red-500/10">
             ⚠️ {error}
           </div>
         )}
 
         {userVote && (
-          <div className="text-center text-green-300 mb-6 text-sm animate-bounce">
-            🎉 Thank you for voting! 🎉
+          <div className="text-center text-green-400 mb-6 text-sm animate-pulse">
+            ✓ VOTE CASTED SUCCESSFULLY ✓
           </div>
         )}
 
         {/* Результаты */}
         {stats.total > 0 && (
           <div className={`mt-8 transition-all duration-500 ${animate ? 'animate-fade-in' : ''}`}>
-            <div className="flex justify-between text-sm text-gray-300 mb-3">
+            <div className="flex justify-between text-sm text-gray-500 mb-4">
               <span className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                Yes ({stats.yes})
+                <div className="w-2 h-2 bg-green-500 rounded-full shadow-lg shadow-green-500"></div>
+                FOR ({stats.yes})
               </span>
               <span className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                No ({stats.no})
+                <div className="w-2 h-2 bg-red-500 rounded-full shadow-lg shadow-red-500"></div>
+                AGAINST ({stats.no})
               </span>
             </div>
             
-            {/* Круговая диаграмма */}
+            {/* Неоновая круговая диаграмма */}
             <div className="relative w-48 h-48 mx-auto mb-8">
-              <svg className="w-full h-full transform -rotate-90 transition-all duration-700" viewBox="0 0 100 100">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                 <circle
                   cx="50"
                   cy="50"
                   r="45"
                   fill="none"
-                  stroke="rgba(255,255,255,0.2)"
+                  stroke="#1a1a1a"
                   strokeWidth="8"
                 />
                 {yesPercent > 0 && (
@@ -173,11 +174,11 @@ export default function Home() {
                     cy="50"
                     r="45"
                     fill="none"
-                    stroke="url(#gradientYes)"
+                    stroke="#10b981"
                     strokeWidth="8"
                     strokeDasharray={`${yesPercent * 2.827} 282.7`}
                     strokeLinecap="round"
-                    className="transition-all duration-1000"
+                    className="filter drop-shadow-lg"
                   />
                 )}
                 {noPercent > 0 && (
@@ -186,75 +187,55 @@ export default function Home() {
                     cy="50"
                     r="45"
                     fill="none"
-                    stroke="url(#gradientNo)"
+                    stroke="#ef4444"
                     strokeWidth="8"
                     strokeDasharray={`${noPercent * 2.827} 282.7`}
                     strokeLinecap="round"
                     strokeDashoffset={`-${yesPercent * 2.827}`}
-                    className="transition-all duration-1000 delay-200"
                   />
                 )}
-                <defs>
-                  <linearGradient id="gradientYes" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#10b981" />
-                    <stop offset="100%" stopColor="#34d399" />
-                  </linearGradient>
-                  <linearGradient id="gradientNo" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#ef4444" />
-                    <stop offset="100%" stopColor="#f87171" />
-                  </linearGradient>
-                </defs>
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-white animate-pulse">
+                  <div className="text-3xl font-bold text-green-400 animate-pulse">
                     {stats.total}
                   </div>
-                  <div className="text-xs text-gray-300">total votes</div>
+                  <div className="text-xs text-gray-600 tracking-wider">VOTES</div>
                 </div>
               </div>
             </div>
 
-            {/* Проценты с анимацией */}
+            {/* Неоновые карточки процентов */}
             <div className="grid grid-cols-2 gap-4 text-center">
-              <div className="bg-gradient-to-br from-green-500/20 to-emerald-600/20 backdrop-blur-sm rounded-2xl p-4 transform hover:scale-105 transition-all duration-300 border border-green-500/30">
-                <div className="text-3xl font-bold text-green-400 animate-count-up">
+              <div className="bg-gradient-to-br from-green-500/10 to-transparent border border-green-500/30 rounded-xl p-4 hover:border-green-500/60 transition-all duration-300">
+                <div className="text-3xl font-bold text-green-400 font-mono">
                   {yesPercent.toFixed(1)}%
                 </div>
-                <div className="text-sm text-gray-300 mt-1">For</div>
-                <div className="text-xs text-gray-400 mt-2">{stats.yes} votes</div>
+                <div className="text-sm text-gray-500 mt-1">FOR</div>
+                <div className="text-xs text-gray-600 mt-2">{stats.yes} votes</div>
               </div>
-              <div className="bg-gradient-to-br from-red-500/20 to-rose-600/20 backdrop-blur-sm rounded-2xl p-4 transform hover:scale-105 transition-all duration-300 border border-red-500/30">
-                <div className="text-3xl font-bold text-red-400">
+              <div className="bg-gradient-to-br from-red-500/10 to-transparent border border-red-500/30 rounded-xl p-4 hover:border-red-500/60 transition-all duration-300">
+                <div className="text-3xl font-bold text-red-400 font-mono">
                   {noPercent.toFixed(1)}%
                 </div>
-                <div className="text-sm text-gray-300 mt-1">Against</div>
-                <div className="text-xs text-gray-400 mt-2">{stats.no} votes</div>
+                <div className="text-sm text-gray-500 mt-1">AGAINST</div>
+                <div className="text-xs text-gray-600 mt-2">{stats.no} votes</div>
               </div>
             </div>
           </div>
         )}
 
         {stats.total === 0 && (
-          <div className="text-center text-gray-400 mt-8 animate-pulse">
-            ✨ No votes yet. Be the first! ✨
+          <div className="text-center text-gray-600 mt-8 animate-pulse border border-gray-800 rounded-xl p-6">
+            <span className="text-2xl block mb-2">💀</span>
+            NO VOTES YET<br />
+            <span className="text-xs">BE THE FIRST</span>
           </div>
         )}
       </div>
 
       <style jsx>{`
-        @keyframes fade-in-down {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes fade-in-up {
+        @keyframes fade-in {
           from {
             opacity: 0;
             transform: translateY(20px);
@@ -265,45 +246,16 @@ export default function Home() {
           }
         }
         
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
-        }
-        
-        .animate-fade-in-down {
-          animation: fade-in-down 0.6s ease-out;
-        }
-        
-        .animate-fade-in-up {
-          animation: fade-in-up 0.6s ease-out;
-        }
-        
         .animate-fade-in {
           animation: fade-in 0.5s ease-out;
         }
         
-        .animate-shake {
-          animation: shake 0.3s ease-in-out;
+        .delay-700 {
+          animation-delay: 0.7s;
         }
         
         .delay-1000 {
           animation-delay: 1s;
-        }
-        
-        .delay-200 {
-          transition-delay: 0.2s;
         }
       `}</style>
     </div>
