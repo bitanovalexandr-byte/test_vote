@@ -3,8 +3,8 @@ import { db } from '@/db';
 import { votes, voters } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import crypto from 'crypto';
+import { rateLimit } from '@/lib/rate-limit';
 
-// Генерируем fingerprint на основе IP и User-Agent
 function generateFingerprint(req: NextRequest): string {
   const ip = req.headers.get('x-forwarded-for') || 'unknown';
   const ua = req.headers.get('user-agent') || 'unknown';
@@ -15,12 +15,22 @@ export async function POST(req: NextRequest) {
   try {
     const { choice } = await req.json();
     const fingerprint = generateFingerprint(req);
-
+    
+    // Rate limiting — 1 голос в 24 часа
+    const { success } = await rateLimit(fingerprint);
+    
+    if (!success) {
+      return NextResponse.json(
+        { error: 'You can only vote once per 24 hours' },
+        { status: 429 }
+      );
+    }
+    
     if (choice !== 'yes' && choice !== 'no') {
       return NextResponse.json({ error: 'Invalid choice' }, { status: 400 });
     }
 
-    // Проверяем, голосовал ли уже этот пользователь
+    // Проверяем, голосовал ли уже этот пользователь (старая логика)
     const existingVoter = await db
       .select()
       .from(voters)
