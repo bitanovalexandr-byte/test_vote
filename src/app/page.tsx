@@ -15,7 +15,7 @@ export default function Home() {
       .catch(err => console.error(err));
   }, []);
 
-  const handleVote = async (choice) => {
+  const handleVote = async (choice: 'yes' | 'no') => {
     if (userVote) {
       setError('You already voted');
       return;
