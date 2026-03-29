@@ -1,28 +1,29 @@
-import { pgTable, serial, varchar, timestamp, integer, text, boolean, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, text, timestamp, boolean, integer, uniqueIndex } from 'drizzle-orm/pg-core';
 
-// ===== ОСНОВНАЯ ТАБЛИЦА ГОЛОСОВ =====
-export const votes = pgTable('votes', {
-  id: serial('id').primaryKey(),
-  choice: varchar('choice', { length: 3 }).notNull(), // 'yes' или 'no'
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
-
-// ===== ТАБЛИЦА ДЛЯ RATE LIMITING (вместо voters) =====
-export const rateLimits = pgTable('rate_limits', {
-  id: serial('id').primaryKey(),
-  identifier: varchar('identifier', { length: 255 }).notNull(), // IP или fingerprint
-  votedAt: timestamp('voted_at').defaultNow().notNull(),
-}, (table) => ({
-  identifierIdx: uniqueIndex('rate_limit_idx').on(table.identifier),
-}));
-
-// ===== ПОДГОТОВКА ДЛЯ БУДУЩИХ МНОЖЕСТВЕННЫХ ОПРОСОВ =====
+// ===== ОПРОСЫ =====
 export const polls = pgTable('polls', {
   id: serial('id').primaryKey(),
-  title: varchar('title', { length: 255 }).notNull(),
-  description: text('description'),
   question: text('question').notNull(),
-  isActive: boolean('is_active').default(true),
+  scheduledFor: timestamp('scheduled_for').notNull(), // день, когда активен
+  isActive: boolean('is_active').default(false),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  endsAt: timestamp('ends_at'),
 });
+
+// ===== ГОЛОСА (только количество) =====
+export const pollResults = pgTable('poll_results', {
+  id: serial('id').primaryKey(),
+  pollId: integer('poll_id').notNull().references(() => polls.id, { onDelete: 'cascade' }),
+  votesYes: integer('votes_yes').default(0),
+  votesNo: integer('votes_no').default(0),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// ===== RATE LIMITING (1 голос в день по IP) =====
+export const rateLimits = pgTable('rate_limits', {
+  id: serial('id').primaryKey(),
+  identifier: varchar('identifier', { length: 255 }).notNull(),
+  pollId: integer('poll_id').notNull(),
+  votedAt: timestamp('voted_at').defaultNow().notNull(),
+}, (table) => ({
+  identifierIdx: uniqueIndex('rate_limit_idx').on(table.identifier, table.pollId),
+}));

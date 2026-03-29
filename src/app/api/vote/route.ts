@@ -1,56 +1,111 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { votes, rateLimits } from '@/db/schema';
-import { sql, eq } from 'drizzle-orm';
-import { rateLimit } from '@/lib/rate-limit';
+import { polls, pollResults, rateLimits } from '@/db/schema';
+import { eq, and, gte, sql } from 'drizzle-orm';
+
+// Получить текущий активный опрос
+async function getCurrentPoll() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const poll = await db
+    .select()
+    .from(polls)
+    .where(
+      and(
+        eq(polls.isActive, true),
+        gte(polls.scheduledFor, today)
+      )
+    )
+    .limit(1);
+  
+  return poll[0];
+}
 
 export async function POST(req: NextRequest) {
   try {
     const { choice } = await req.json();
+    const ip = req.headers.get('x-forwarded-for') || 'unknown';
     
-    // Валидация
     if (choice !== 'yes' && choice !== 'no') {
       return NextResponse.json({ error: 'Invalid choice' }, { status: 400 });
     }
-
-    // Получаем IP пользователя
-    const ip = req.headers.get('x-forwarded-for') || 'unknown';
     
-    // Rate limiting — 1 голос в день по IP
-    const { success, reset } = await rateLimit(ip);
+    // Получаем текущий опрос
+    const currentPoll = await getCurrentPoll();
+    if (!currentPoll) {
+      return NextResponse.json({ error: 'No active poll today' }, { status: 404 });
+    }
     
-    if (!success) {
-      const resetDate = new Date(reset);
-      const hoursLeft = Math.ceil((resetDate.getTime() - Date.now()) / (1000 * 60 * 60));
+    // Проверяем rate limit
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const existingVote = await db
+      .select()
+      .from(rateLimits)
+      .where(
+        and(
+          eq(rateLimits.identifier, ip),
+          eq(rateLimits.pollId, currentPoll.id),
+          gte(rateLimits.votedAt, today)
+        )
+      )
+      .limit(1);
+    
+    if (existingVote.length > 0) {
       return NextResponse.json(
-        { 
-          error: `You can only vote once per day. Come back in ${hoursLeft} hour${hoursLeft !== 1 ? 's' : ''}` 
-        },
-        { 
-          status: 429,
-          headers: {
-            'X-RateLimit-Reset': resetDate.toISOString(),
-          }
-        }
+        { error: 'You have already voted today' },
+        { status: 429 }
       );
     }
-
-    // Сохраняем голос (анонимно!)
-    await db.insert(votes).values({ choice });
     
-    // Сохраняем запись о голосовании для rate limiting
-    await db.insert(rateLimits).values({ identifier: ip });
-
-    // Получаем актуальную статистику
-    const stats = await db
-      .select({
-        yes: sql<number>`count(case when choice = 'yes' then 1 end)`,
-        no: sql<number>`count(case when choice = 'no' then 1 end)`,
-        total: sql<number>`count(*)`,
-      })
-      .from(votes);
-
-    return NextResponse.json(stats[0]);
+    // Обновляем результаты
+    const result = await db
+      .select()
+      .from(pollResults)
+      .where(eq(pollResults.pollId, currentPoll.id))
+      .limit(1);
+    
+    if (result.length === 0) {
+      // Создаём запись, если её нет
+      await db.insert(pollResults).values({
+        pollId: currentPoll.id,
+        votesYes: choice === 'yes' ? 1 : 0,
+        votesNo: choice === 'no' ? 1 : 0,
+      });
+    } else {
+      // Обновляем существующую
+      const updates = choice === 'yes' 
+        ? { votesYes: result[0].votesYes + 1 }
+        : { votesNo: result[0].votesNo + 1 };
+      
+      await db
+        .update(pollResults)
+        .set(updates)
+        .where(eq(pollResults.pollId, currentPoll.id));
+    }
+    
+    // Записываем rate limit
+    await db.insert(rateLimits).values({
+      identifier: ip,
+      pollId: currentPoll.id,
+    });
+    
+    // Возвращаем актуальные результаты
+    const updatedResult = await db
+      .select()
+      .from(pollResults)
+      .where(eq(pollResults.pollId, currentPoll.id))
+      .limit(1);
+    
+    return NextResponse.json({
+      question: currentPoll.question,
+      yes: updatedResult[0]?.votesYes || 0,
+      no: updatedResult[0]?.votesNo || 0,
+      total: (updatedResult[0]?.votesYes || 0) + (updatedResult[0]?.votesNo || 0)
+    });
+    
   } catch (error) {
     console.error('Vote error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -59,15 +114,24 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   try {
-    const stats = await db
-      .select({
-        yes: sql<number>`count(case when choice = 'yes' then 1 end)`,
-        no: sql<number>`count(case when choice = 'no' then 1 end)`,
-        total: sql<number>`count(*)`,
-      })
-      .from(votes);
-
-    return NextResponse.json(stats[0]);
+    const currentPoll = await getCurrentPoll();
+    if (!currentPoll) {
+      return NextResponse.json({ error: 'No active poll today' }, { status: 404 });
+    }
+    
+    const result = await db
+      .select()
+      .from(pollResults)
+      .where(eq(pollResults.pollId, currentPoll.id))
+      .limit(1);
+    
+    return NextResponse.json({
+      question: currentPoll.question,
+      yes: result[0]?.votesYes || 0,
+      no: result[0]?.votesNo || 0,
+      total: (result[0]?.votesYes || 0) + (result[0]?.votesNo || 0)
+    });
+    
   } catch (error) {
     console.error('GET error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
