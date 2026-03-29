@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { polls, pollResults, rateLimits } from '@/db/schema';
-import { eq, and, gte, sql } from 'drizzle-orm';
+import { eq, and, gte } from 'drizzle-orm';
 
 // Получить текущий активный опрос
 async function getCurrentPoll() {
@@ -76,9 +76,10 @@ export async function POST(req: NextRequest) {
       });
     } else {
       // Обновляем существующую
+      const currentResult = result[0];
       const updates = choice === 'yes' 
-        ? { votesYes: result[0].votesYes + 1 }
-        : { votesNo: result[0].votesNo + 1 };
+        ? { votesYes: (currentResult.votesYes || 0) + 1 }
+        : { votesNo: (currentResult.votesNo || 0) + 1 };
       
       await db
         .update(pollResults)
