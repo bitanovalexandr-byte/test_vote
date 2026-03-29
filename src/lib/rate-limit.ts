@@ -1,57 +1,40 @@
-// Получить следующий midnight
-function getNextMidnight(): number {
-  const now = new Date();
-  const tomorrow = new Date(now);
-  tomorrow.setDate(now.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
-  return tomorrow.getTime();
-}
+import { db } from '@/db';
+import { rateLimits } from '@/db/schema';
+import { eq, and, gte } from 'drizzle-orm';
 
-// Проверить, голосовал ли пользователь сегодня
-function isSameDay(timestamp1: number, timestamp2: number): boolean {
-  const date1 = new Date(timestamp1);
-  const date2 = new Date(timestamp2);
-  return date1.toDateString() === date2.toDateString();
-}
-
-// In-memory хранилище (на Vercel сбрасывается при перезапуске)
-const votesMap = new Map<string, number>();
-
+// Проверка, голосовал ли пользователь сегодня
 export async function rateLimit(identifier: string, limit = 1) {
-  const now = Date.now();
-  const lastVote = votesMap.get(identifier);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   
-  // Если голосовал сегодня
-  if (lastVote && isSameDay(lastVote, now)) {
-    const nextMidnight = getNextMidnight();
-    const hoursUntilReset = Math.ceil((nextMidnight - now) / (1000 * 60 * 60));
+  // Проверяем в базе данных
+  const existingVote = await db
+    .select()
+    .from(rateLimits)
+    .where(
+      and(
+        eq(rateLimits.identifier, identifier),
+        gte(rateLimits.votedAt, today)
+      )
+    )
+    .limit(1);
+  
+  if (existingVote.length > 0) {
+    const nextMidnight = new Date(today);
+    nextMidnight.setDate(today.getDate() + 1);
     
     return {
       success: false,
       limit,
       remaining: 0,
-      reset: nextMidnight,
-      message: `You can vote again in ${hoursUntilReset} hour${hoursUntilReset !== 1 ? 's' : ''} (at midnight)`
+      reset: nextMidnight.getTime()
     };
-  }
-  
-  // Сохраняем голос
-  votesMap.set(identifier, now);
-  
-  // Очищаем старые записи (раз в день)
-  if (Math.random() < 0.01) {
-    const today = new Date().toDateString();
-    for (const [key, time] of votesMap.entries()) {
-      if (new Date(time).toDateString() !== today) {
-        votesMap.delete(key);
-      }
-    }
   }
   
   return {
     success: true,
     limit,
     remaining: limit - 1,
-    reset: getNextMidnight()
+    reset: new Date().setHours(24, 0, 0, 0)
   };
 }

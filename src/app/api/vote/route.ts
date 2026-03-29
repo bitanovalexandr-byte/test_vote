@@ -1,53 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { votes, voters } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
-import crypto from 'crypto';
+import { votes, rateLimits } from '@/db/schema';
+import { sql, eq } from 'drizzle-orm';
 import { rateLimit } from '@/lib/rate-limit';
-
-function generateFingerprint(req: NextRequest): string {
-  const ip = req.headers.get('x-forwarded-for') || 'unknown';
-  const ua = req.headers.get('user-agent') || 'unknown';
-  return crypto.createHash('sha256').update(`${ip}|${ua}`).digest('hex');
-}
 
 export async function POST(req: NextRequest) {
   try {
     const { choice } = await req.json();
-    const fingerprint = generateFingerprint(req);
     
-    // Rate limiting
-const { success, reset, message } = await rateLimit(fingerprint);
-
-if (!success) {
-  return NextResponse.json(
-    { error: message || 'You can only vote once per day' },
-    { 
-      status: 429,
-      headers: {
-        'X-RateLimit-Reset': new Date(reset).toISOString(),
-      }
+    // Валидация
+    if (choice !== 'yes' && choice !== 'no') {
+      return NextResponse.json({ error: 'Invalid choice' }, { status: 400 });
     }
-  );
-}
 
-    // Проверяем, голосовал ли уже этот пользователь (старая логика)
-    const existingVoter = await db
-      .select()
-      .from(voters)
-      .where(eq(voters.fingerprint, fingerprint))
-      .limit(1);
-
-    if (existingVoter.length > 0) {
+    // Получаем IP пользователя
+    const ip = req.headers.get('x-forwarded-for') || 'unknown';
+    
+    // Rate limiting — 1 голос в день по IP
+    const { success, reset } = await rateLimit(ip);
+    
+    if (!success) {
+      const resetDate = new Date(reset);
+      const hoursLeft = Math.ceil((resetDate.getTime() - Date.now()) / (1000 * 60 * 60));
       return NextResponse.json(
-        { error: 'You have already voted' },
-        { status: 409 }
+        { 
+          error: `You can only vote once per day. Come back in ${hoursLeft} hour${hoursLeft !== 1 ? 's' : ''}` 
+        },
+        { 
+          status: 429,
+          headers: {
+            'X-RateLimit-Reset': resetDate.toISOString(),
+          }
+        }
       );
     }
 
-    // Сохраняем голос
+    // Сохраняем голос (анонимно!)
     await db.insert(votes).values({ choice });
-    await db.insert(voters).values({ fingerprint, choice });
+    
+    // Сохраняем запись о голосовании для rate limiting
+    await db.insert(rateLimits).values({ identifier: ip });
 
     // Получаем актуальную статистику
     const stats = await db
@@ -77,6 +69,7 @@ export async function GET() {
 
     return NextResponse.json(stats[0]);
   } catch (error) {
+    console.error('GET error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -98,7 +98,7 @@ export default function Home() {
           <p className="text-2xl md:text-3xl font-bold text-gray-200 mb-2">
             Is this project awesome?
           </p>
-          <p className="text-gray-500 text-sm tracking-wider">⚡ ONE VOTE PER DAY ⚡</p>
+          <p className="text-gray-500 text-sm tracking-wider">⚡ ANONYMOUS • ONE VOTE PER DAY ⚡</p>
         </div>
 
         {/* Кнопки с неоновым эффектом */}
